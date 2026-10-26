@@ -1,0 +1,7 @@
+# Banco de dados e backups gerados ao rodar
+data/
+*.db
+*.db-wal
+*.db-shm
+__pycache__/
+*.pyc

@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- C3: CSP — restringe origens. 'unsafe-inline' permanece enquanto houver onclick inline;
+         será removido no Bloco 5 (D1) quando o JS for externalizado. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+    <meta name="referrer" content="no-referrer">
+    <meta name="description" content="Registro de uso dos computadores — Biblioteca Pública Municipal (uso local)">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#2c3e50">
+    <title>Sistema de Registro - Biblioteca Pública Municipal</title>
+    <link rel="icon" type="image/jpeg" href="logo_biblioteca.jpeg">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --heading-color: #111;
+            --border-color: #ddd;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #c0392b;
+            --shadow: 0 4px 6px rgba(0,0,0,0.05);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.dark-mode {
+            color-scheme: dark; /* controles nativos seguem o tema do app, não o do SO */
+            --primary-color: #1a252f;
+            --secondary-color: #2980b9;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --heading-color: #fff;
+            --border-color: #333;
+            --shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* O atributo hidden precisa vencer display:flex/block definidos no CSS */
+        [hidden] { display: none !important; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: var(--transition);
+        }
+
+        .theme-switch-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .theme-label { font-size: 0.8rem; font-weight: 600; }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--secondary-color); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: 2rem 1rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .main-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            background-color: white;
+        }
+
+        .header-text { text-align: left; }
+        .header-text h1 { font-size: 2rem; margin-bottom: 0.2rem; }
+        .header-text p { font-size: 1.1rem; opacity: 0.9; }
+
+        /* Clock Styles */
+        .digital-clock {
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            text-align: right;
+            font-family: 'Courier New', Courier, monospace;
+            background: rgba(0,0,0,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        .clock-time {
+            font-size: 1.4rem;
+            font-weight: bold;
+            display: block;
+            letter-spacing: 1px;
+        }
+
+        .clock-date {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        .tab-container {
+            display: flex;
+            justify-content: center;
+            background-color: var(--card-bg);
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 1rem 2rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #666;
+            transition: var(--transition);
+            border-bottom: 3px solid transparent;
+        }
+
+        body.dark-mode .tab-btn { color: #aaa; }
+        .tab-btn:hover {
+            color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        .tab-btn.active {
+            color: var(--secondary-color);
+            border-bottom: 3px solid var(--secondary-color);
+        }
+
+        main { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+
+        .tab-content {
+            display: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: var(--transition);
+        }
+
+        .tab-content.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+            animation: tabFade 0.3s ease;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+
+        .section-title {
+            margin-bottom: 1.5rem;
+            color: var(--heading-color);
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .grid-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .form-group { margin-bottom: 0; }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            transition: var(--transition);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .form-actions { grid-column: 1 / -1; text-align: right; }
+
+        .btn-primary {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .search-box { flex: 1; min-width: 250px; }
+
+        .advanced-filters {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .advanced-filters select {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .pc-panel .card-header { margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem 1rem; }
+        .pc-panel .section-title { margin-bottom: 0; }
+        .pc-summary { display: flex; gap: 0.25rem 1rem; flex-wrap: wrap; font-size: 0.85rem; }
+        .pc-count { display: inline-flex; align-items: center; gap: 0.4rem; opacity: 0.85; }
+        .pc-count::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--success-color); }
+        .pc-count.occupied::before { background: var(--danger-color); }
+        .pc-count.suspended::before { background: var(--warning-color); }
+        .pc-dashboard { display: grid; grid-template-columns: repeat(14, 1fr); gap: 0.5rem; }
+        .pc-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; min-height: 52px; padding: 0.4rem 0.25rem; border-radius: 10px; border: 1px solid rgba(39, 174, 96, 0.3); background: rgba(39, 174, 96, 0.08); transition: background 0.2s; }
+        .pc-tile.occupied { border-color: rgba(192, 57, 43, 0.4); background: rgba(192, 57, 43, 0.1); }
+        .pc-tile.suspended { border-color: rgba(243, 156, 18, 0.45); background: rgba(243, 156, 18, 0.12); }
+        .pc-tile strong { font-size: 1rem; font-weight: 600; line-height: 1.1; }
+        .pc-tile small { max-width: 100%; margin-top: 0.15rem; font-size: 0.68rem; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        @media (max-width: 900px) { .pc-dashboard { grid-template-columns: repeat(7, 1fr); } }
+        @media (max-width: 520px) { .pc-dashboard { grid-template-columns: repeat(4, 1fr); } }
+
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Só colunas de texto livre quebram texto sem espaços; em todas as células, datas/botões seriam espremidos */
+        #users-table td:nth-child(1),
+        #registration-table td:nth-child(1), #registration-table td:nth-child(2),
+        #audit-table td:nth-child(3), #audit-table td:nth-child(5) {
+            overflow-wrap: anywhere;
+            min-width: 8rem;
+        }
+
+        th {
+            background-color: var(--bg-color);
+            color: var(--heading-color);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .status-badge {
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            display: inline-block;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .status-ativo { background-color: #2ecc71 !important; color: white !important; border: 1px solid #27ae60 !important; }
+        .status-suspenso { background-color: #f1c40f !important; color: #333 !important; border: 1px solid #f39c12 !important; }
+        .status-inativo { background-color: #e74c3c !important; color: white !important; border: 1px solid #c0392b !important; }
+
+        .expired-row {
+            border-left: 4px solid var(--danger-color);
+            background-color: rgba(192, 57, 43, 0.05);
+        }
+
+        .action-btn {
+            padding: 0.4rem 0.8rem;
+            margin-right: 0.3rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: var(--transition);
+        }
+
+        .btn-edit { background-color: #eee; color: #333; }
+        .btn-status { background-color: var(--secondary-color); color: white; }
+        .btn-lgpd { background-color: #8e44ad; color: white; }
+        .btn-mais { background-color: var(--border-color); color: var(--text-color); font-weight: bold; }
+
+        /* Tabela de sessões (layout C): nome em cima, detalhes embaixo; blocos "agora" / "saíram" */
+        .linha-sub { display: block; font-size: 0.75rem; opacity: 0.75; }
+        .grupo-sessoes td { font-weight: 700; font-size: 0.8rem; padding-top: 0.9rem; color: var(--text-color); }
+        .grupo-sessoes .ponto { color: var(--success-color); }
+
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border-top: 4px solid var(--secondary-color);
+        }
+
+        .metric-label {
+            display: block;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .filter-period {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 2rem;
+        }
+
+        .chart-container {
+            text-align: center;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: var(--transition);
+            background-color: var(--card-bg);
+            max-width: 150px;
+            margin: 0 auto;
+        }
+        .chart-container canvas {
+            max-height: 100px !important;
+            max-width: 100% !important;
+        }
+
+        .chart-container:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .chart-header h3 {
+            margin-bottom: 0;
+            font-size: 0.8rem;
+            color: var(--heading-color);
+        }
+
+        .btn-pdf {
+            background-color: #e74c3c;
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: bold;
+            transition: var(--transition);
+        }
+
+        .btn-pdf:hover {
+            background-color: #c0392b;
+        }
+
+        .note-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 600px;
+            margin-bottom: 3rem;
+        }
+
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .note-card {
+            background: #fff9c4;
+            padding: 1.5rem;
+            border-radius: 4px;
+            box-shadow: 5px 5px 7px rgba(0,0,0,0.1);
+            position: relative;
+            transition: var(--transition);
+            color: #333;
+            border-bottom-right-radius: 20px;
+            overflow-wrap: anywhere; /* texto sem espaços quebra dentro do cartão em vez de vazar */
+            min-width: 0;
+        }
+
+        body.dark-mode .note-card {
+            background: #333;
+            color: #eee;
+            box-shadow: 5px 5px 7px rgba(0,0,0,0.5);
+        }
+
+        .note-card.urgent { background: #ffcdd2; border-left: 8px solid #f44336; }
+        .note-card.info { background: #bbdefb; border-left: 8px solid #2196f3; }
+        .note-card.general { background: #fff9c4; border-left: 8px solid #ffeb3b; }
+
+        .note-card h4 {
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .note-card p {
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .note-date {
+            font-size: 0.7rem;
+            color: #666;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .note-delete {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .note-delete:hover {
+            color: var(--danger-color);
+        }
+
+        .tutorial-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .tutorial-step {
+            padding: 1rem;
+            border-left: 4px solid var(--secondary-color);
+            background-color: var(--bg-color);
+            border-radius: 0 8px 8px 0;
+            transition: var(--transition);
+        }
+
+        body.dark-mode .tutorial-step {
+            background-color: #2a2a2a;
+        }
+
+        .tutorial-step h3 {
+            margin-bottom: 0.5rem;
+            color: var(--heading-color);
+            font-size: 1.2rem;
+        }
+
+        .tutorial-step p {
+            font-size: 0.95rem;
+            color: var(--text-color);
+            opacity: 0.9;
+        }
+
+        .tutorial-step:hover {
+            transform: translateX(5px);
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        @keyframes tabFade {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
+        .toast { padding: 0.8rem 1rem; border-radius: 8px; color: white; font-size: 0.9rem; box-shadow: var(--shadow); background-color: var(--primary-color); }
+        .toast-success { background-color: var(--success-color); }
+        .toast-error { background-color: var(--danger-color); }
+        /* Rodapé fixo acima de tudo (inclusive .auth-overlay 4000): visível na tela de senha e sem cobrir abas/tema. */
+        .db-status { position: fixed; left: 0; right: 0; bottom: 0; z-index: 4500; background-color: var(--danger-color); color: #fff; font-weight: bold; text-align: center; padding: 0.6rem 1rem; }
+        .db-status[hidden] { display: none; }
+        .backup-erro { color: var(--danger-color); font-weight: bold; }
+        #db-status:not([hidden]) ~ #toast-container { bottom: 64px; z-index: 4600; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1500; padding: 1rem; }
+        .modal-box { background: var(--card-bg); color: var(--text-color); padding: 1.5rem; border-radius: 12px; width: 90%; max-width: 480px; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow); }
+        .modal-box h3 { margin-bottom: 1rem; color: var(--heading-color); }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+        .tempo-excedido { color: var(--danger-color); font-weight: bold; }
+        .urgent-banner { background: #ffcdd2; border-left: 8px solid #f44336; color: #333; padding: 0.8rem 1rem; border-radius: 4px; margin-bottom: 1rem; overflow-wrap: anywhere; }
+
+        /* ===== Bloco 1 — autenticação (senha única) / segurança / privacidade ===== */
+        .auth-overlay { position: fixed; inset: 0; background-color: var(--bg-color); z-index: 4000; display: flex; align-items: center; justify-content: center; padding: 1rem; overflow: auto; }
+        .auth-box { background: var(--card-bg); color: var(--text-color); border-radius: 12px; box-shadow: var(--shadow); padding: 2rem; width: 100%; max-width: 460px; }
+        .auth-logo { display: block; width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 0.75rem; border: 2px solid var(--primary-color); background: #fff; object-fit: cover; }
+        .auth-box h2, .auth-box h3 { text-align: center; color: var(--heading-color); margin-bottom: 0.25rem; }
+        .auth-sub { text-align: center; font-size: 0.9rem; opacity: 0.8; margin-bottom: 1.25rem; }
+        .auth-box .form-group { margin-bottom: 1rem; }
+        .auth-btn { width: 100%; margin-top: 0.5rem; }
+        .auth-links { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 1rem; align-items: center; }
+        .link-btn { background: none; border: none; color: var(--secondary-color); cursor: pointer; font-size: 0.85rem; text-decoration: underline; padding: 0.2rem; }
+        .session-bar { position: absolute; top: 12px; left: 16px; display: flex; gap: 0.5rem; align-items: center; z-index: 1200; }
+        .session-operator { font-size: 0.8rem; background: rgba(255,255,255,0.15); padding: 0.25rem 0.6rem; border-radius: 12px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .btn-tiny { padding: 0.3rem 0.7rem; font-size: 0.75rem; }
+        .warning-box { background: rgba(243,156,18,0.15); border-left: 4px solid var(--warning-color); padding: 0.8rem 1rem; border-radius: 4px; margin: 0.75rem 0; font-size: 0.9rem; }
+        .danger-box { background: rgba(192,57,43,0.12); border-left: 4px solid var(--danger-color); padding: 0.8rem 1rem; border-radius: 4px; margin: 0.75rem 0; font-size: 0.9rem; }
+        .recovery-code { font-family: 'Courier New', monospace; font-size: 1.35rem; letter-spacing: 3px; text-align: center; padding: 0.9rem; background: var(--bg-color); border: 2px dashed var(--warning-color); border-radius: 8px; margin: 1rem 0; user-select: all; font-weight: bold; color: var(--heading-color); }
+        .check-line { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; margin: 0.5rem 0; }
+        .op-role { padding: 0.2rem 0.5rem; border-radius: 10px; font-size: 0.72rem; font-weight: bold; text-transform: uppercase; }
+        .reentrada-hora { padding: 0.5rem 0; opacity: 0.85; }
+        .handover-list { padding-left: 1.2rem; }
+        .handover-list li { margin-bottom: 0.5rem; font-size: 0.95rem; }
+        .privacy-body h4 { margin: 0.9rem 0 0.3rem; color: var(--heading-color); font-size: 1rem; }
+        .privacy-body ul, .privacy-body ol { padding-left: 1.2rem; margin-bottom: 0.5rem; }
+        .privacy-body li, .privacy-body p { font-size: 0.88rem; margin-bottom: 0.35rem; }
+
+        @media (max-width: 768px) {
+            .grid-form {
+                grid-template-columns: 1fr;
+            }
+            .filter-bar {
+                flex-direction: column;
+            }
+            .advanced-filters {
+                width: 100%;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
+            .session-bar { position: static; justify-content: center; flex-wrap: wrap; margin-bottom: 0.5rem; }
+            header { padding-top: 1rem; }
+        }
+
+        /* ===== Bloco 3 — paginação de todas as tabelas ===== */
+        .table-pager { display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; margin-top: 0.75rem; flex-wrap: wrap; }
+        .table-pager .pager-info { font-size: 0.82rem; opacity: 0.85; }
+        .table-pager button { padding: 0.3rem 0.7rem; font-size: 0.78rem; }
+        .table-pager button:disabled { opacity: 0.45; cursor: default; }
+    </style>
+</head>
+<body>
+    <div id="db-status" class="db-status" role="status" aria-live="assertive" hidden>Sem conexão com o banco de dados local — NADA está sendo gravado. Verifique o terminal (python3 run.py).</div>
+    <div class="theme-switch-container">
+        <label class="switch">
+            <input type="checkbox" id="theme-toggle">
+            <span class="slider round"></span>
+        </label>
+        <span class="theme-label">Modo Escuro</span>
+    </div>
+
+    <header>
+        <div id="session-bar" class="session-bar" hidden>
+            <span id="session-operator" class="session-operator"></span>
+            <button type="button" id="btn-privacy" class="btn-secondary btn-tiny">Privacidade</button>
+        </div>
+        <div class="header-content">
+            <img src="logo_biblioteca.jpeg" alt="Logo da Biblioteca" class="main-logo">
+            <div class="header-text">
+                <h1>Biblioteca Pública Municipal</h1>
+                <p>Sistema de Controle de Computadores</p>
+            </div>
+        </div>
+        <div class="digital-clock">
+            <span id="clock-time" class="clock-time">00:00:00</span>
+            <span id="clock-date" class="clock-date">carregando data...</span>
+        </div>
+    </header>
+
+    <nav class="tab-container">
+        <button class="tab-btn active" data-click="openTab" data-arg="tab-geral">Geral</button>
+        <button class="tab-btn" data-click="openTab" data-arg="tab-cadastros">Cadastros</button>
+        <button class="tab-btn" data-click="openTab" data-arg="tab-seguranca">Segurança</button>
+        <button class="tab-btn" data-click="openTab" data-arg="tab-graficos">Gráficos</button>
+        <button class="tab-btn" data-click="openTab" data-arg="tab-avisos">Avisos</button>
+        <button class="tab-btn" data-click="openTab" data-arg="tab-ajuda">Ajuda/Tutorial</button>
+    </nav>
+
+    <!-- C1: tela de autenticação — cobre o sistema até o login (setup no primeiro uso) -->
+    <!-- Overlay cobre a UI até o desbloqueio: começa com "Abrindo..." (logo + espera
+         do desbloqueio silencioso); a tela de senha só monta como fallback. -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-box">
+            <img src="logo_biblioteca.jpeg" alt="" class="auth-logo">
+            <h2>Sistema de Controle de Computadores</h2>
+            <p class="auth-sub">Biblioteca Pública Municipal — acesso restrito (senha única do sistema)</p>
+            <p id="auth-loading" class="auth-sub" style="text-align:center;">Abrindo o sistema…</p>
+
+            <div id="auth-login-view" hidden>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-password">Senha do sistema:</label>
+                        <input type="password" id="login-password" autocomplete="current-password" required>
+                    </div>
+                    <button type="submit" class="btn-primary auth-btn" id="login-btn">Desbloquear</button>
+                </form>
+                <p style="font-size:0.78rem;opacity:0.75;margin-top:0.6rem;text-align:center;">O acesso normal é automático, sem senha. Esta tela aparece apenas se a senha do sistema tiver sido <strong>alterada</strong> — digite a senha atual ou use o código de recuperação.</p>
+                <div id="lock-msg" class="danger-box" hidden></div>
+                <div class="auth-links">
+                    <button type="button" class="link-btn" id="btn-show-recovery">Esqueci a senha (código de recuperação)</button>
+                    <button type="button" class="link-btn" id="btn-show-setup" hidden>Primeiro uso: configurar o sistema</button>
+                    <button type="button" class="link-btn" id="btn-privacy-login">Aviso de Privacidade (LGPD)</button>
+                </div>
+            </div>
+
+            <div id="auth-setup-view" hidden>
+                <h3>Configuração inicial — senha única do sistema</h3>
+                <div class="warning-box">Defina a <strong>senha única do sistema</strong>: os dados de cidadãos serão cifrados sob ela. O controle de <em>quem</em> opera o sistema é feito <strong>externamente pela empresa</strong>; aqui, a senha protege os dados contra leitura indevida na máquina (DevTools).</div>
+                <form id="setup-form">
+                    <div class="form-group">
+                        <label for="setup-password">Senha do sistema (mín. 8 caracteres):</label>
+                        <input type="password" id="setup-password" autocomplete="new-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="setup-password2">Confirmar senha:</label>
+                        <input type="password" id="setup-password2" autocomplete="new-password" required>
+                    </div>
+                    <button type="submit" class="btn-primary auth-btn">Criar senha do sistema</button>
+                </form>
+                <div class="auth-links">
+                    <button type="button" class="link-btn" id="btn-back-login">← Voltar</button>
+                </div>
+            </div>
+
+            <div id="auth-recovery-view" hidden>
+                <h3>Recuperar acesso</h3>
+                <p class="auth-sub">Use o código de recuperação de 16 caracteres para voltar a abrir o sistema sem senha.</p>
+                <form id="recovery-form">
+                    <div class="form-group">
+                        <label for="rec-code">Código de recuperação (16 caracteres):</label>
+                        <input type="text" id="rec-code" maxlength="24" autocomplete="off" required>
+                    </div>
+                    <button type="submit" class="btn-primary auth-btn">Recuperar acesso</button>
+                </form>
+                <div class="auth-links">
+                    <button type="button" class="link-btn" id="btn-back-login2">← Voltar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main>
+        <!-- ABA GERAL: FLUXO de ACESSO -->
+        <section id="tab-geral" class="tab-content active">
+            <div id="urgent-notes"></div>
+            <div class="card">
+                <h2 class="section-title">Registrar Entrada de Usuário</h2>
+                <form id="access-form" class="grid-form">
+                    <div class="form-group">
+                        <label for="access-identifier">Matrícula do Usuário:</label>
+                        <input type="text" id="access-identifier" placeholder="Digite a matrícula..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="access-pc">Número do Computador (1 a 28):</label>
+                        <input type="number" id="access-pc" min="1" max="28" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Confirmar Entrada</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card pc-panel">
+                <div class="card-header">
+                    <h2 class="section-title">Computadores</h2>
+                    <div id="pc-summary" class="pc-summary"></div>
+                </div>
+                <div id="pc-dashboard" class="pc-dashboard" role="list"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="section-title">Sessões Ativas e Histórico</h2>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button data-click="exportUsersCSV" class="btn-secondary">Exportar Base de Usuários</button>
+                        <button data-click="exportSessionsCSV" class="btn-secondary">Exportar Sessões</button>
+                    </div>
+                </div>
+
+                <div class="filter-bar">
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="Buscar na lista atual..." data-keyup="filterUsers">
+                    </div>
+                    <div class="advanced-filters">
+                        <select id="filter-status" data-change="filterUsers">
+                            <option value="todos">Todos Status</option>
+                            <option value="Ativo">Ativos</option>
+                            <option value="Suspenso">Suspensos</option>
+                            <option value="Inativo">Inativos</option>
+                        </select>
+                        <select id="filter-cat" data-change="filterUsers">
+                            <option value="todos">Todas Categorias</option>
+                            <option value="Infantil">Infantis</option>
+                            <option value="Jovem">Jovens</option>
+                            <option value="Adulto">Adultos</option>
+                        </select>
+                        <label style="display: flex; align-items: center; gap: 0.4rem;"><input type="checkbox" id="filter-hist" data-change="filterUsers"> Histórico completo</label>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table id="users-table">
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>PC</th>
+                                <th>Entrada</th>
+                                <th>Saída</th>
+                                <th>Tempo</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-list">
+                            <!-- Content populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="users-pager" class="table-pager" hidden></div>
+            </div>
+        </section>
+
+        <!-- ABA CADASTROS: GESTÃO DE USUÁRIOS -->
+        <section id="tab-cadastros" class="tab-content">
+            <div class="card">
+                <h2 class="section-title">Cadastrar Novo Usuário na Base</h2>
+                <form id="user-registration-form" class="grid-form">
+                    <div class="form-group">
+                        <label for="reg-matricula">Matrícula (máx 5 dígitos):</label>
+                        <input type="text" id="reg-matricula" maxlength="5" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-nome">Nome Completo:</label>
+                        <input type="text" id="reg-nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-nascimento">Data de Nascimento:</label>
+                        <input type="date" id="reg-nascimento" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-validade">Validade da Matrícula:</label>
+                        <input type="date" id="reg-validade" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Salvar Cadastro</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="section-title">Base de Usuários Cadastrados</h2>
+                    <div class="search-box">
+                        <input type="text" id="reg-search-input" placeholder="🔍 Pesquisar por nome ou matrícula..." data-keyup="filterRegistrationList">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                    <button data-click="exportBackup" class="btn-secondary">Exportar Backup</button>
+                    <button data-click="exportBackupPlain" class="btn-secondary">Backup em CLARO (aviso)</button>
+                    <button data-click="abrirSeletorArquivo" data-arg="import-backup" class="btn-secondary">Importar Backup</button>
+                    <input type="file" id="import-backup" accept=".json,.enc,application/json" style="display: none;" data-change="importBackup">
+                    <button data-click="abrirSeletorArquivo" data-arg="reimport-archive" class="btn-secondary">Reimportar Sessões (.json.enc)</button>
+                    <input type="file" id="reimport-archive" accept=".json,.enc,application/json" style="display: none;" data-change="reimportArchive">
+                </div>
+                <div class="table-responsive">
+                    <table id="registration-table">
+                        <thead>
+                            <tr>
+                                <th>Matrícula</th>
+                                <th>Nome</th>
+                                <th>Nascimento</th>
+                                <th>Categoria</th>
+                                <th>Validade</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="registration-list">
+                            <!-- Content populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="registration-pager" class="table-pager" hidden></div>
+            </div>
+        </section>
+        <!-- ABA SEGURANÇA: senha única do sistema + auditoria + handover -->
+        <section id="tab-seguranca" class="tab-content">
+            <div class="card" id="backup-card">
+                <h2 class="section-title">Backup automático</h2>
+                <p>O sistema gera um backup por dia sozinho (guarda os últimos 30). Para guardar em outro lugar, abra a pasta e copie (Ctrl+C / Ctrl+V).</p>
+                <p id="backup-status">Carregando status do backup...</p>
+                <button type="button" id="btn-open-backups" class="btn-secondary">Abrir pasta de backups</button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="section-title">Auditoria (registro de ações)</h2>
+                    <button type="button" data-click="exportAuditCSV" class="btn-secondary">Exportar CSV</button>
+                </div>
+                <div class="filter-bar">
+                    <label style="display:flex;align-items:center;gap:0.4rem;">De: <input type="date" id="audit-filter-start" data-change="renderAuditTable"></label>
+                    <label style="display:flex;align-items:center;gap:0.4rem;">Até: <input type="date" id="audit-filter-end" data-change="renderAuditTable"></label>
+                </div>
+                <div class="table-responsive">
+                    <table id="audit-table">
+                        <thead>
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>Ação</th>
+                                <th>Alvo</th>
+                                <th>Resultado</th>
+                                <th>Detalhes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-list"></tbody>
+                    </table>
+                </div>
+                <div id="audit-pager" class="table-pager" hidden></div>
+                <p id="audit-note" style="font-size:0.8rem;opacity:0.75;margin-top:0.5rem;"></p>
+            </div>
+
+            <div class="card">
+                <h2 class="section-title">Checklist de handover (troca de responsável a cada 2 anos)</h2>
+                <ol class="handover-list">
+                    <li>Exportar <strong>backup</strong> e o <strong>relatório de gestão</strong> (aba Gráficos) antes da troca.</li>
+                    <li>Entregar fora do sistema: o último backup (pasta de backups automáticos) e os arquivos <code>.json.enc</code> de sessões arquivadas.</li>
+                    <li>Registrar a troca no controle externo da empresa (quem está no balcão).</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- ABA GRÁFICOS -->
+        <section id="tab-graficos" class="tab-content">
+            <div class="metrics-row">
+                <div class="metric-card">
+                    <span class="metric-label">Média de Tempo de Uso</span>
+                    <span id="avg-time" class="metric-value">0 min</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Total de Acessos</span>
+                    <span id="total-accesses" class="metric-value">0</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="section-title">Análise de Dados</h2>
+                <div class="filter-period">
+                    <label for="start-date">Início:</label>
+                    <input type="date" id="start-date">
+                    <label for="end-date">Fim:</label>
+                    <input type="date" id="end-date">
+                    <button data-click="updateCharts" class="btn-primary">Filtrar</button>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-container" id="container-pizza">
+                        <div class="chart-header">
+                            <h3>Uso por Categoria (Pizza)</h3>
+                            <button data-click="downloadChartPDF" data-arg="container-pizza" data-arg2="Uso por Categoria" class="btn-pdf">PDF</button>
+                        </div>
+                        <canvas id="chartPizza"></canvas>
+                    </div>
+                    <div class="chart-container" id="container-bars">
+                        <div class="chart-header">
+                            <h3>Acessos por PC (Barras)</h3>
+                            <button data-click="downloadChartPDF" data-arg="container-bars" data-arg2="Acessos por PC" class="btn-pdf">PDF</button>
+                        </div>
+                        <canvas id="chartBars"></canvas>
+                    </div>
+                    <div class="chart-container" id="container-donut">
+                        <div class="chart-header">
+                            <h3>Distribuição de Status (Donut)</h3>
+                            <button data-click="downloadChartPDF" data-arg="container-donut" data-arg2="Distribuição de Status" class="btn-pdf">PDF</button>
+                        </div>
+                        <canvas id="chartDonut"></canvas>
+                    </div>
+                    <div class="chart-container" id="container-hourly">
+                        <div class="chart-header">
+                            <h3>Pico de Acessos por Hora</h3>
+                            <button data-click="downloadChartPDF" data-arg="container-hourly" data-arg2="Pico de Acessos" class="btn-pdf">PDF</button>
+                        </div>
+                        <canvas id="chartHourly"></canvas>
+                    </div>
+                </div>
+
+                <!-- C5.6 / A2: relatório de gestão para handover entre gestões -->
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:1.5rem;">
+                    <button type="button" data-click="generateManagementReportCSV" class="btn-secondary">Relatório de Gestão (CSV)</button>
+                    <button type="button" data-click="generateManagementReportPDF" class="btn-secondary">Relatório de Gestão (PDF)</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA AVISOS -->
+        <section id="tab-avisos" class="tab-content">
+            <div class="card">
+                <h2 class="section-title">Gestão de Avisos</h2>
+                <div class="note-form">
+                    <div class="form-group">
+                        <input type="text" id="note-title" placeholder="Título do Aviso">
+                    </div>
+                    <div class="form-group">
+                        <textarea id="note-text" placeholder="Conteúdo do aviso..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <select id="note-category">
+                            <option value="Geral">Geral</option>
+                            <option value="Urgente">Urgente</option>
+                            <option value="Informativo">Informativo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="note-expire">Válido até (opcional):</label>
+                        <input type="date" id="note-expire">
+                    </div>
+                    <button data-click="addNote" class="btn-primary">Adicionar Aviso</button>
+                </div>
+
+                <div id="notes-grid" class="notes-grid">
+                    <!-- Post-it cards go here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA AJUDA/TUTORIAL -->
+        <section id="tab-ajuda" class="tab-content">
+            <div class="card">
+                <h2 class="section-title">Manual de Uso do Sistema</h2>
+                <div class="tutorial-content">
+                    <div class="tutorial-step">
+                        <h3>0. Desbloqueando o Sistema</h3>
+                        <p>Ao abrir o sistema, ele é <strong>desbloqueado automaticamente</strong> — não há senha. Os monitores operam o sistema como um só; o controle de quem opera é feito externamente pela empresa.</p>
+                    </div>
+                    <div class="tutorial-step">
+                        <h3>1. Cadastrando Usuários</h3>
+                        <p>Vá até a aba <strong>"Cadastros"</strong>. Preencha a matrícula, nome, data de nascimento e a validade da matrícula. Clique em "Salvar Cadastro". Um usuário deve estar cadastrado aqui para poder usar os computadores.</p>
+                    </div>
+                    <div class="tutorial-step">
+                        <h3>2. Registrando Entrada</h3>
+                        <p>Na aba <strong>"Geral"</strong>, digite a matrícula do usuário e o número do computador (de 1 a 28). Clique em "Confirmar Entrada". O sistema verificará automaticamente se o usuário existe e se a matrícula é válida.</p>
+                    </div>
+                    <div class="tutorial-step">
+                        <h3>3. Controlando o Status</h3>
+                        <p>Na tabela de sessões da aba Geral, use o botão <strong>"Status"</strong> para alterar a situação do usuário. Você pode escolher entre Ativo, Suspenso ou Inativo. Ao marcar como "Inativo", o sistema registra automaticamente a hora de saída.</p>
+                    </div>
+                    <div class="tutorial-step">
+                        <h3>4. Analisando Dados</h3>
+                        <p>Na aba <strong>"Gráficos"</strong>, você pode filtrar por período, baixar os relatórios em PDF e gerar o <strong>Relatório de Gestão</strong> (CSV/PDF) para a prestação de contas no fim do ciclo de 2 anos.</p>
+                    </div>
+                    <div class="tutorial-step">
+                        <h3>5. Gestão de Avisos</h3>
+                        <p>Na aba <strong>"Avisos"</strong>, crie notas coloridas para registrar ocorrências ou avisos importantes para os usuários.</p>
+                    </div>
+                    <div class="tutorial-step">
+                        <h3>6. Privacidade, Backup e Handover</h3>
+                        <p>O botão <strong>"Privacidade"</strong> (topo) abre o Aviso de Privacidade/LGPD em qualquer tela. A aba <strong>"Segurança"</strong> mostra o <strong>backup automático</strong>, permite consultar/exportar a <strong>auditoria</strong> de ações e ver o <strong>checklist de handover</strong> da troca de responsável. A exclusão de titular (LGPD) fica na aba Cadastros.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- C3: Bibliotecas vendorizadas locais (offline total — SHA-384 verificado na
+         instalação contra os hashes SRI originais; nada é carregado da internet). -->
+    <script src="vendor/chart.umd.js"></script>
+    <script src="vendor/jspdf.umd.min.js"></script>
+    <script src="vendor/html2canvas.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
