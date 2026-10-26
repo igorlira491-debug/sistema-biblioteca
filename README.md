@@ -14,6 +14,20 @@ que guiaram todas as decisões técnicas:
 
 ---
 
+## 📸 Telas
+
+*Todos os nomes nas capturas são fictícios.*
+
+**Painel principal:** entrada de leitores, mapa dos 28 computadores e sessões do dia.
+
+![Painel principal](capturas/tela-geral.png)
+
+**Cadastro de leitores:** categoria calculada automaticamente pela idade e exclusão conforme a LGPD.
+
+![Cadastro de leitores](capturas/tela-cadastros.png)
+
+---
+
 ## ✨ Funcionalidades
 
 - Cadastro de leitores com **categoria automática pela idade** (Infantil, Jovem, Adulto)
